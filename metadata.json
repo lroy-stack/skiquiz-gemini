@@ -1,0 +1,5 @@
+{
+  "name": "SkiQuiz",
+  "description": "A fast-paced, skill-based ski & snowboard trivia game where players compete for weekly prizes. Features 5-second rapid-fire questions, a ticket economy, and live leaderboards.",
+  "requestFramePermissions": []
+}
