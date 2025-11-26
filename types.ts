@@ -5,7 +5,8 @@ export enum Screen {
   LEADERBOARD = 'LEADERBOARD',
   SHOP = 'SHOP',
   PROFILE = 'PROFILE',
-  PRIZES = 'PRIZES'
+  PRIZES = 'PRIZES',
+  SETTINGS = 'SETTINGS'
 }
 
 export interface Question {
@@ -22,10 +23,17 @@ export interface Badge {
   iconName: string;
 }
 
+export interface UserSettings {
+  soundEnabled: boolean;
+  hapticEnabled: boolean;
+  notificationsEnabled: boolean;
+}
+
 export interface UserState {
   tickets: number;
   highScore: number;
   dailyFreePlayUsed: boolean;
+  dailyBonusClaimed: boolean; // Track if daily ticket was received
   streakDays: number;
   totalGamesPlayed: number;
   username: string;
@@ -34,6 +42,9 @@ export interface UserState {
   totalCorrectAnswers: number;
   referralCode: string;
   referralsCount: number;
+  totalScore: number;
+  perfectGames: number;
+  settings: UserSettings;
 }
 
 export interface QuizState {

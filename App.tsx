@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Ticket, Zap, Trophy, Clock, Share2, Info, Lock, Flag, Calendar, Target, Crown, Award, Gift, Copy, Check } from 'lucide-react';
+import { Ticket, Zap, Trophy, Clock, Share2, Info, Lock, Flag, Calendar, Target, Crown, Award, Gift, Copy, Check, ChevronLeft, Volume2, VolumeX, Bell, Smartphone, LogOut, Save, Mail } from 'lucide-react';
 import { Screen, UserState, QuizState, Question } from './types';
 import { GAME_CONFIG, PRIZE_TIERS, SHOP_ITEMS, MOCK_LEADERBOARD, BADGES } from './constants';
 import { getRandomQuestions } from './services/questionService';
@@ -17,6 +17,7 @@ export default function App() {
     tickets: 5, // Starting bonus
     highScore: 0,
     dailyFreePlayUsed: false,
+    dailyBonusClaimed: false,
     streakDays: 3,
     totalGamesPlayed: 12,
     username: 'Guest Skier',
@@ -27,6 +28,11 @@ export default function App() {
     totalCorrectAnswers: 45,
     referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
     referralsCount: 2,
+    settings: {
+      soundEnabled: true,
+      hapticEnabled: true,
+      notificationsEnabled: false,
+    }
   });
 
   // Quiz State
@@ -45,6 +51,10 @@ export default function App() {
   const [showRedeemInput, setShowRedeemInput] = useState(false);
   const [redeemInputValue, setRedeemInputValue] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showDailyBonus, setShowDailyBonus] = useState(false);
+  
+  // Settings UI State
+  const [tempUsername, setTempUsername] = useState(user.username);
 
   // Refs for timer
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -52,14 +62,14 @@ export default function App() {
   // --- ACTIONS ---
 
   const startQuiz = useCallback((isFree: boolean) => {
-    if (!isFree && user.tickets < 1) {
+    if (!isFree && user.tickets < GAME_CONFIG.TICKET_COST_REPLAY) {
       setCurrentScreen(Screen.SHOP);
       return;
     }
 
     // Deduct ticket if not free
     if (!isFree) {
-      setUser(prev => ({ ...prev, tickets: prev.tickets - 1 }));
+      setUser(prev => ({ ...prev, tickets: prev.tickets - GAME_CONFIG.TICKET_COST_REPLAY }));
     } else {
       setUser(prev => ({ ...prev, dailyFreePlayUsed: true }));
     }
@@ -114,7 +124,7 @@ export default function App() {
 
       return { 
         ...prev, 
-        tickets: prev.tickets + GAME_CONFIG.TICKETS_EARNED_PLAY,
+        // NOTE: No tickets added here. Only earned via login, referral or shop.
         totalGamesPlayed: newTotalGames,
         highScore: newHighScore,
         totalCorrectAnswers: newTotalCorrect,
@@ -202,7 +212,37 @@ export default function App() {
     setShowRedeemInput(false);
   };
 
+  const toggleSetting = (key: keyof typeof user.settings) => {
+    setUser(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        [key]: !prev.settings[key]
+      }
+    }));
+  };
+
+  const saveUsername = () => {
+    if (tempUsername.trim().length > 0) {
+      setUser(prev => ({ ...prev, username: tempUsername.trim() }));
+      alert("Profile updated!");
+    }
+  };
+
   // --- EFFECTS ---
+
+  // Daily Login Bonus Logic
+  useEffect(() => {
+    if (!user.dailyBonusClaimed) {
+      setUser(prev => ({
+        ...prev,
+        tickets: prev.tickets + GAME_CONFIG.DAILY_LOGIN_BONUS,
+        dailyBonusClaimed: true
+      }));
+      setShowDailyBonus(true);
+      setTimeout(() => setShowDailyBonus(false), 4000); // Hide after 4s
+    }
+  }, []); // Run once on mount
 
   // Timer Logic
   useEffect(() => {
@@ -236,8 +276,24 @@ export default function App() {
     }
   };
 
+  const renderDailyBonusModal = () => (
+    <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ${showDailyBonus ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0 pointer-events-none'}`}>
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-white/20">
+        <div className="bg-white/20 p-1.5 rounded-full">
+          <Gift size={20} className="text-white" fill="white" />
+        </div>
+        <div>
+          <p className="font-bold text-sm">Daily Bonus!</p>
+          <p className="text-xs opacity-90">+{GAME_CONFIG.DAILY_LOGIN_BONUS} Ticket added</p>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderHome = () => (
     <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar relative z-10">
+      {renderDailyBonusModal()}
+      
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -246,52 +302,87 @@ export default function App() {
           </h1>
           <p className="text-blue-200 text-sm shadow-black drop-shadow-sm">Season 24/25 • Week 12</p>
         </div>
-        <div className="flex items-center bg-slate-800/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-slate-700 cursor-pointer shadow-lg" onClick={() => setCurrentScreen(Screen.SHOP)}>
+        <div className="flex items-center bg-slate-800/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-slate-700 cursor-pointer shadow-lg active:scale-95 transition-transform" onClick={() => setCurrentScreen(Screen.SHOP)}>
           <Ticket size={16} className="text-blue-400 mr-2" />
           <span className="font-bold text-white">{user.tickets}</span>
           <div className="ml-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-[10px] text-white">+</div>
         </div>
       </div>
 
-      {/* Hero Card */}
-      <div className="bg-gradient-to-br from-blue-600/90 to-blue-800/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl shadow-blue-900/40 relative overflow-hidden mb-8 border border-blue-500/30">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-        <div className="relative z-10">
-          <div className="flex justify-between items-start mb-4">
-            <span className="bg-blue-900/40 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border border-blue-400/30 text-blue-100">
-              Live Tournament
-            </span>
-            <div className="text-right">
-              <div className="text-xs text-blue-200 uppercase font-semibold">Ends in</div>
-              <div className="font-mono font-bold text-white">04:22:15</div>
-            </div>
-          </div>
-          
-          <h2 className="text-2xl font-bold mb-1">Win a Helmet</h2>
-          <p className="text-blue-200 text-sm mb-6">Current 1st Place: <span className="text-white font-bold">685 pts</span></p>
+      {/* Hero Card - Enhanced */}
+      <div className="relative mb-8 group">
+        {/* Glow Effect behind card */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+        
+        <div className="bg-slate-900 rounded-[1.8rem] p-1 shadow-2xl relative overflow-hidden border border-slate-800">
+           {/* Inner background with gradient */}
+           <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/10 absolute inset-0"></div>
+           
+           {/* Content Container */}
+           <div className="relative rounded-[1.6rem] bg-slate-900/80 backdrop-blur-md p-5 flex flex-col h-full min-h-[220px]">
+              
+              {/* Header: Timer & Badge */}
+              <div className="flex justify-between items-start mb-4">
+                 <div className="flex flex-col relative z-10">
+                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Weekly Cup</span>
+                    <h2 className="text-3xl font-black text-white italic tracking-tighter leading-none drop-shadow-lg">
+                      WIN A <br/>
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">HELMET</span>
+                    </h2>
+                 </div>
+                 
+                 <div className="bg-black/40 rounded-lg p-2 border border-white/5 flex flex-col items-center min-w-[70px] backdrop-blur-sm">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">Ends In</span>
+                    <div className="font-mono font-bold text-white text-sm flex items-center gap-1">
+                       <Clock size={12} className="text-red-400 animate-pulse"/>
+                       04:22
+                    </div>
+                 </div>
+              </div>
 
-          <div className="space-y-3">
-             {/* Main Play Button */}
-            {!user.dailyFreePlayUsed ? (
-              <Button fullWidth variant="success" size="lg" onClick={() => startQuiz(true)}>
-                Play Free
-                <span className="ml-2 bg-white/20 px-2 py-0.5 rounded text-xs">1x Daily</span>
-              </Button>
-            ) : (
-              <Button fullWidth variant="primary" size="lg" onClick={() => startQuiz(false)} disabled={user.tickets < 1}>
-                Play Now
-                <span className="ml-2 bg-black/20 px-2 py-0.5 rounded text-xs flex items-center">
-                  1 <Ticket size={12} className="ml-1"/>
-                </span>
-              </Button>
-            )}
-            
-            <div className="text-center">
-              <p className="text-xs text-blue-200">
-                Next free game in <span className="font-mono text-white">14:20:05</span>
-              </p>
-            </div>
-          </div>
+              {/* Middle: Stats & Visuals */}
+              <div className="flex items-center justify-between mb-6 relative z-10">
+                 <div className="flex items-center gap-3 bg-white/5 rounded-full pl-1 pr-4 py-1.5 border border-white/10 backdrop-blur-md">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-b from-yellow-300 to-yellow-600 flex items-center justify-center text-xs font-bold text-black shadow-lg">1</div>
+                    <div className="flex flex-col leading-none">
+                       <span className="text-[10px] text-slate-300 font-medium">Current Leader</span>
+                       <span className="text-sm font-bold text-white">685 pts</span>
+                    </div>
+                 </div>
+                 
+                 {/* Decorative Icon */}
+                 <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-4 -translate-y-8">
+                    <Trophy size={120} className="text-blue-400" />
+                 </div>
+              </div>
+
+              {/* Action: Button */}
+              <div className="mt-auto relative z-20">
+                {!user.dailyFreePlayUsed ? (
+                  <Button fullWidth variant="success" size="lg" onClick={() => startQuiz(true)} className="shadow-lg shadow-green-900/20 border-t border-green-400/20">
+                    <div className="flex flex-col items-center leading-none py-0.5">
+                       <span className="text-lg font-black uppercase tracking-wide">Play Free</span>
+                       <span className="text-[10px] opacity-90 font-medium mt-1">1x Daily Chance</span>
+                    </div>
+                  </Button>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                     <Button fullWidth variant="primary" size="lg" onClick={() => startQuiz(false)} disabled={user.tickets < GAME_CONFIG.TICKET_COST_REPLAY} className="shadow-lg shadow-blue-900/20 border-t border-blue-400/20">
+                        <div className="flex items-center justify-center gap-2">
+                           <span className="text-lg font-black uppercase tracking-wide">Play Now</span>
+                           <div className="bg-black/20 px-2 py-1 rounded text-xs flex items-center font-mono border border-white/10 text-blue-200">
+                              - {GAME_CONFIG.TICKET_COST_REPLAY} <Ticket size={12} className="ml-1"/>
+                           </div>
+                        </div>
+                     </Button>
+                     <div className="text-center">
+                        <span className="text-[10px] text-slate-500 font-medium bg-black/20 px-3 py-1 rounded-full">Next free game in <span className="font-mono text-slate-300">14:20:05</span></span>
+                     </div>
+                  </div>
+                )}
+              </div>
+
+           </div>
         </div>
       </div>
 
@@ -396,19 +487,14 @@ export default function App() {
                 <div className="font-bold text-xl">#42</div>
              </div>
            </div>
-
-           <div className="flex items-center justify-center gap-2 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
-              <Ticket className="text-blue-400" size={20} />
-              <span className="font-bold text-blue-100">+1 Ticket Earned</span>
-           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="w-full max-w-sm space-y-4">
-          <Button fullWidth variant="primary" onClick={() => startQuiz(false)}>
+          <Button fullWidth variant="primary" onClick={() => startQuiz(false)} disabled={user.tickets < GAME_CONFIG.TICKET_COST_REPLAY}>
             Play Again
             <span className="ml-2 bg-black/20 px-2 py-0.5 rounded text-xs font-normal opacity-80">
-              -3 Tickets
+              -{GAME_CONFIG.TICKET_COST_REPLAY} Tickets
             </span>
           </Button>
 
@@ -714,22 +800,142 @@ export default function App() {
       </div>
 
       <div className="mt-4 space-y-2">
-        <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group">
+        <button 
+          onClick={() => setCurrentScreen(Screen.SETTINGS)}
+          className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group"
+        >
           <span className="font-medium text-slate-300 group-hover:text-white">Account Settings</span>
-          <span className="text-slate-500">→</span>
-        </button>
-        <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group">
-          <span className="font-medium text-slate-300 group-hover:text-white">Restore Purchases</span>
-          <span className="text-slate-500">→</span>
-        </button>
-         <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group">
-          <span className="font-medium text-slate-300 group-hover:text-white">Privacy & Legal</span>
           <span className="text-slate-500">→</span>
         </button>
       </div>
       
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center pb-8">
         <span className="text-xs text-slate-600">Version 1.0.2 (Build 45)</span>
+      </div>
+    </div>
+  );
+
+  const renderSettings = () => (
+    <div className="flex flex-col h-full bg-slate-900 z-20">
+      {/* Settings Header */}
+      <div className="px-6 pt-8 pb-4 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 flex items-center sticky top-0 z-30">
+        <button 
+          onClick={() => setCurrentScreen(Screen.PROFILE)} 
+          className="mr-4 p-2 -ml-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <h2 className="text-xl font-bold">Settings</h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-8">
+        
+        {/* Section: Profile */}
+        <section>
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">My Profile</h3>
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-4 space-y-4">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Username</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={tempUsername}
+                  onChange={(e) => setTempUsername(e.target.value)}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+             <Button size="sm" fullWidth onClick={saveUsername} disabled={tempUsername === user.username}>
+                <Save size={16} className="mr-2" /> Update Profile
+              </Button>
+          </div>
+        </section>
+
+        {/* Section: Preferences */}
+        <section>
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Preferences</h3>
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden">
+            
+            {/* Sound Toggle */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                  {user.settings.soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                </div>
+                <span className="font-medium text-slate-200">Sound Effects</span>
+              </div>
+              <button 
+                onClick={() => toggleSetting('soundEnabled')}
+                className={`w-12 h-6 rounded-full relative transition-colors ${user.settings.soundEnabled ? 'bg-blue-500' : 'bg-slate-600'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${user.settings.soundEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            {/* Haptics Toggle */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
+                   <Smartphone size={16} />
+                </div>
+                <span className="font-medium text-slate-200">Haptic Feedback</span>
+              </div>
+              <button 
+                onClick={() => toggleSetting('hapticEnabled')}
+                className={`w-12 h-6 rounded-full relative transition-colors ${user.settings.hapticEnabled ? 'bg-blue-500' : 'bg-slate-600'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${user.settings.hapticEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+             {/* Notifications Toggle */}
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                   <Bell size={16} />
+                </div>
+                <span className="font-medium text-slate-200">Notifications</span>
+              </div>
+              <button 
+                onClick={() => toggleSetting('notificationsEnabled')}
+                className={`w-12 h-6 rounded-full relative transition-colors ${user.settings.notificationsEnabled ? 'bg-blue-500' : 'bg-slate-600'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${user.settings.notificationsEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Section: Support */}
+        <section>
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Support</h3>
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-1">
+            <button className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 rounded-lg transition-colors text-left">
+              <div className="flex items-center gap-3">
+                <Mail size={18} className="text-slate-400" />
+                <span className="font-medium text-slate-200">Contact Support</span>
+              </div>
+            </button>
+            <button className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 rounded-lg transition-colors text-left border-t border-slate-700/50">
+               <div className="flex items-center gap-3">
+                <Info size={18} className="text-slate-400" />
+                <span className="font-medium text-slate-200">Privacy Policy</span>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        {/* Section: Danger */}
+        <section>
+           <Button variant="danger" fullWidth onClick={() => alert("Logged out successfully (Simulated)")}>
+             <LogOut size={18} className="mr-2" /> Log Out
+           </Button>
+           <div className="mt-4 text-center">
+             <p className="text-[10px] text-slate-600 uppercase tracking-widest">SkiQuiz Inc. © 2024</p>
+           </div>
+        </section>
+
       </div>
     </div>
   );
@@ -747,10 +953,11 @@ export default function App() {
         {currentScreen === Screen.LEADERBOARD && renderLeaderboard()}
         {currentScreen === Screen.SHOP && renderShop()}
         {currentScreen === Screen.PROFILE && renderProfile()}
+        {currentScreen === Screen.SETTINGS && renderSettings()}
       </div>
 
       {/* Bottom Nav (only on non-game screens) */}
-      {currentScreen !== Screen.QUIZ && currentScreen !== Screen.RESULT && (
+      {currentScreen !== Screen.QUIZ && currentScreen !== Screen.RESULT && currentScreen !== Screen.SETTINGS && (
         <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} />
       )}
     </div>
