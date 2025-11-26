@@ -6,6 +6,7 @@ import { getRandomQuestions } from './services/questionService';
 import Button from './components/Button';
 import BottomNav from './components/BottomNav';
 import QuizCard from './components/QuizCard';
+import Snowfall from './components/Snowfall';
 
 export default function App() {
   // --- STATE ---
@@ -21,6 +22,8 @@ export default function App() {
     username: 'Guest Skier',
     rank: 0, // Unranked initially
     badges: ['first_run'], // Give Rookie badge to start since they have played games
+    totalScore: 4500,
+    perfectGames: 2,
     totalCorrectAnswers: 45,
     referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
     referralsCount: 2,
@@ -83,6 +86,7 @@ export default function App() {
       const newTotalGames = prev.totalGamesPlayed + 1;
       const newTotalCorrect = prev.totalCorrectAnswers + finalAnswers.filter(Boolean).length;
       const newHighScore = Math.max(prev.highScore, finalScore);
+      const isPerfectGame = finalAnswers.every(a => a);
       
       const newBadges = [...prev.badges];
 
@@ -114,6 +118,8 @@ export default function App() {
         totalGamesPlayed: newTotalGames,
         highScore: newHighScore,
         totalCorrectAnswers: newTotalCorrect,
+        totalScore: prev.totalScore + finalScore,
+        perfectGames: isPerfectGame ? prev.perfectGames + 1 : prev.perfectGames,
         badges: newBadges
       };
     });
@@ -129,7 +135,6 @@ export default function App() {
 
     const currentQ = questions[quiz.currentQuestionIndex];
     const isCorrect = selectedOption === currentQ.correctAnswer;
-    const timeTaken = GAME_CONFIG.TIME_PER_QUESTION_SEC - timeLeft;
     
     let points = 0;
     if (isCorrect) {
@@ -232,16 +237,16 @@ export default function App() {
   };
 
   const renderHome = () => (
-    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar">
+    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar relative z-10">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-black italic tracking-tighter text-white">
+          <h1 className="text-3xl font-black italic tracking-tighter text-white drop-shadow-lg">
             SKI<span className="text-blue-400">QUIZ</span>
           </h1>
-          <p className="text-blue-200 text-sm">Season 24/25 • Week 12</p>
+          <p className="text-blue-200 text-sm shadow-black drop-shadow-sm">Season 24/25 • Week 12</p>
         </div>
-        <div className="flex items-center bg-slate-800 rounded-full px-3 py-1.5 border border-slate-700 cursor-pointer" onClick={() => setCurrentScreen(Screen.SHOP)}>
+        <div className="flex items-center bg-slate-800/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-slate-700 cursor-pointer shadow-lg" onClick={() => setCurrentScreen(Screen.SHOP)}>
           <Ticket size={16} className="text-blue-400 mr-2" />
           <span className="font-bold text-white">{user.tickets}</span>
           <div className="ml-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-[10px] text-white">+</div>
@@ -249,11 +254,11 @@ export default function App() {
       </div>
 
       {/* Hero Card */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 shadow-2xl shadow-blue-900/40 relative overflow-hidden mb-8">
+      <div className="bg-gradient-to-br from-blue-600/90 to-blue-800/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl shadow-blue-900/40 relative overflow-hidden mb-8 border border-blue-500/30">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
         <div className="relative z-10">
           <div className="flex justify-between items-start mb-4">
-            <span className="bg-blue-500/30 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border border-blue-400/30">
+            <span className="bg-blue-900/40 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border border-blue-400/30 text-blue-100">
               Live Tournament
             </span>
             <div className="text-right">
@@ -292,14 +297,14 @@ export default function App() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-4 border border-slate-700 shadow-lg">
           <div className="flex items-center text-slate-400 mb-2">
             <Trophy size={16} className="mr-2" />
             <span className="text-xs font-bold uppercase">Best Score</span>
           </div>
           <p className="text-2xl font-bold text-white">{user.highScore}</p>
         </div>
-        <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-4 border border-slate-700 shadow-lg">
           <div className="flex items-center text-slate-400 mb-2">
             <Zap size={16} className="mr-2" />
             <span className="text-xs font-bold uppercase">Streak</span>
@@ -311,21 +316,21 @@ export default function App() {
       {/* Prize Preview */}
       <div className="mb-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg">Weekly Prizes</h3>
+          <h3 className="font-bold text-lg drop-shadow-md">Weekly Prizes</h3>
           <button className="text-blue-400 text-sm font-semibold" onClick={() => setCurrentScreen(Screen.LEADERBOARD)}>View Ranking</button>
         </div>
         <div className="space-y-3">
           {PRIZE_TIERS[1].prizes && (
             <>
-              <div className="bg-slate-800 p-3 rounded-xl flex items-center gap-4 border border-slate-700">
-                <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center text-yellow-500 font-bold">1</div>
+              <div className="bg-slate-800/80 backdrop-blur-md p-3 rounded-xl flex items-center gap-4 border border-slate-700/50">
+                <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center text-yellow-500 font-bold border border-yellow-500/20">1</div>
                 <div>
                   <div className="font-bold">{PRIZE_TIERS[1].prizes.rank1}</div>
                   <div className="text-xs text-slate-400">Atomic / Salomon</div>
                 </div>
               </div>
-              <div className="bg-slate-800 p-3 rounded-xl flex items-center gap-4 border border-slate-700">
-                <div className="w-10 h-10 bg-gray-400/20 rounded-full flex items-center justify-center text-gray-400 font-bold">2</div>
+              <div className="bg-slate-800/80 backdrop-blur-md p-3 rounded-xl flex items-center gap-4 border border-slate-700/50">
+                <div className="w-10 h-10 bg-gray-400/20 rounded-full flex items-center justify-center text-gray-400 font-bold border border-gray-400/20">2</div>
                 <div>
                   <div className="font-bold">{PRIZE_TIERS[1].prizes.rank2}</div>
                   <div className="text-xs text-slate-400">Oakley / Smith</div>
@@ -339,13 +344,8 @@ export default function App() {
   );
 
   const renderQuiz = () => (
-    <div className="flex flex-col h-full px-6 pt-12 pb-6 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-      </div>
-
+    <div className="flex flex-col h-full px-6 pt-12 pb-6 relative overflow-hidden z-10">
+      {/* Background decoration handled by global snow, extra blur here */}
       <div className="relative z-10 h-full flex flex-col justify-center">
         {questions.length > 0 && (
           <QuizCard
@@ -367,30 +367,31 @@ export default function App() {
     const isPersonalBest = quiz.score >= user.highScore && quiz.score > 0;
 
     return (
-      <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto no-scrollbar items-center text-center">
+      <div className="flex flex-col h-full pt-12 pb-6 px-6 overflow-y-auto no-scrollbar items-center text-center z-10">
         
-        <div className="mb-6">
-           <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4 border-4 border-slate-800">
-             <Trophy size={48} className="text-white" fill="white" />
+        <div className="mb-6 animate-fade-in-up">
+           <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4 border-4 border-slate-800 relative">
+             <Trophy size={48} className="text-white relative z-10" fill="white" />
+             {isPersonalBest && <div className="absolute inset-0 bg-white/30 rounded-full animate-ping"></div>}
            </div>
            <h2 className="text-3xl font-black italic tracking-tight text-white mb-1">FINISHED!</h2>
            {isPersonalBest && (
-             <span className="bg-yellow-500/20 text-yellow-400 text-xs font-bold px-3 py-1 rounded-full border border-yellow-500/30">
+             <span className="bg-yellow-500/20 text-yellow-400 text-xs font-bold px-3 py-1 rounded-full border border-yellow-500/30 animate-pulse">
                NEW PERSONAL BEST
              </span>
            )}
         </div>
 
-        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm mb-6 border border-slate-700 shadow-xl">
+        <div className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 w-full max-w-sm mb-6 border border-slate-700 shadow-xl">
            <div className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Score</div>
-           <div className="text-5xl font-black text-white mb-6">{quiz.score}</div>
+           <div className="text-5xl font-black text-white mb-6 tracking-tighter">{quiz.score}</div>
            
            <div className="grid grid-cols-2 gap-4 mb-4">
-             <div className="bg-slate-900/50 p-3 rounded-xl">
+             <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
                 <div className="text-xs text-slate-500 mb-1">Correct</div>
                 <div className="font-bold text-xl">{correctCount}/{GAME_CONFIG.QUESTIONS_PER_GAME}</div>
              </div>
-             <div className="bg-slate-900/50 p-3 rounded-xl">
+             <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
                 <div className="text-xs text-slate-500 mb-1">Rank</div>
                 <div className="font-bold text-xl">#42</div>
              </div>
@@ -420,31 +421,55 @@ export default function App() {
             </Button>
           </div>
         </div>
-
-        {/* Share */}
-        <div className="mt-8">
-           <button className="flex items-center text-slate-400 hover:text-white transition-colors text-sm font-semibold">
-              <Share2 size={16} className="mr-2" /> Share Result
-           </button>
-        </div>
-
       </div>
     );
   };
 
-  const renderLeaderboard = () => (
-    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-hidden">
+  const renderLeaderboard = () => {
+    // Split leaderbord into Top 3 and Rest
+    const top3 = MOCK_LEADERBOARD.slice(0, 3);
+    const rest = MOCK_LEADERBOARD.slice(3);
+
+    // Reorder Top 3 for Podium: 2nd, 1st, 3rd
+    const podiumOrder = [top3[1], top3[0], top3[2]];
+
+    return (
+    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-hidden z-10">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Ranking</h2>
-        <div className="bg-slate-800 text-xs px-3 py-1 rounded-full border border-slate-700">
+        <h2 className="text-2xl font-bold drop-shadow-md">Ranking</h2>
+        <div className="bg-slate-800/80 backdrop-blur-sm text-xs px-3 py-1 rounded-full border border-slate-700">
            Weekly Tournament
         </div>
       </div>
 
+      {/* Podium */}
+      <div className="flex items-end justify-center gap-2 mb-8 h-40">
+        {podiumOrder.map((item, index) => {
+          // Podium styling logic
+          const isFirst = item.rank === 1;
+          const isSecond = item.rank === 2;
+          const height = isFirst ? 'h-32' : isSecond ? 'h-24' : 'h-20';
+          const color = isFirst ? 'bg-yellow-500' : isSecond ? 'bg-gray-400' : 'bg-amber-700';
+          const shadow = isFirst ? 'shadow-yellow-900/50' : 'shadow-black/50';
+          
+          return (
+            <div key={item.rank} className="flex flex-col items-center w-1/3">
+              <div className="text-xs font-bold mb-1 truncate w-full text-center text-slate-300">{item.name}</div>
+              <div className="font-bold text-sm mb-2 text-blue-200">{item.score}</div>
+              <div className={`w-full ${height} ${color} rounded-t-xl relative flex items-start justify-center pt-2 shadow-lg ${shadow}`}>
+                <div className="font-black text-black/50 text-2xl">{item.rank}</div>
+                {isFirst && <Crown size={32} className="absolute -top-10 text-yellow-400 drop-shadow-lg fill-yellow-500" strokeWidth={1.5} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Your Rank Card */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-4 mb-6 flex items-center justify-between shadow-lg">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-4 mb-4 flex items-center justify-between shadow-lg border border-blue-500/50 relative overflow-hidden">
+        <div className="absolute inset-0 bg-white/5 opacity-50"></div>
+        <div className="flex items-center gap-4 relative z-10">
+           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-sm">
              42
            </div>
            <div>
@@ -452,21 +477,17 @@ export default function App() {
              <div className="text-xs text-blue-200">{user.highScore} pts</div>
            </div>
         </div>
-        <div className="text-xs font-semibold bg-black/20 px-2 py-1 rounded">
+        <div className="text-xs font-semibold bg-black/20 px-2 py-1 rounded relative z-10 backdrop-blur-md">
           Top 15%
         </div>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pb-4">
-         {MOCK_LEADERBOARD.map((item) => (
-           <div key={item.rank} className="bg-slate-800/50 p-3 rounded-xl flex items-center justify-between border border-slate-700/50">
+         {rest.map((item) => (
+           <div key={item.rank} className="bg-slate-800/60 backdrop-blur-sm p-3 rounded-xl flex items-center justify-between border border-slate-700/50">
              <div className="flex items-center gap-4">
-               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                 item.rank === 1 ? 'bg-yellow-500 text-black' : 
-                 item.rank === 2 ? 'bg-gray-400 text-black' : 
-                 item.rank === 3 ? 'bg-amber-700 text-white' : 'bg-slate-700 text-slate-400'
-               }`}>
+               <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm bg-slate-700 text-slate-400">
                  {item.rank}
                </div>
                <div>
@@ -481,23 +502,18 @@ export default function App() {
              </div>
            </div>
          ))}
-         
-         <div className="text-center py-6">
-            <p className="text-xs text-slate-500 mb-2">Want to climb higher?</p>
-            <Button size="sm" variant="primary" onClick={() => startQuiz(false)}>Play Now</Button>
-         </div>
       </div>
     </div>
-  );
+  )};
 
   const renderShop = () => (
-    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar">
+    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar z-10">
        <h2 className="text-2xl font-bold mb-2">Get Tickets</h2>
        <p className="text-slate-400 text-sm mb-8">Tickets are used to play extra games and climb the leaderboard faster.</p>
 
        <div className="space-y-4">
          {SHOP_ITEMS.map((item) => (
-           <div key={item.id} className="bg-slate-800 rounded-2xl p-1 shadow-lg border border-slate-700 hover:border-blue-500/50 transition-colors relative">
+           <div key={item.id} className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-slate-700 hover:border-blue-500/50 transition-colors relative">
              {item.label && (
                 <div className="absolute -top-3 right-4 bg-gradient-to-r from-blue-500 to-purple-500 text-[10px] font-bold px-2 py-1 rounded-full shadow-lg uppercase tracking-wider">
                   {item.label}
@@ -525,7 +541,7 @@ export default function App() {
          ))}
        </div>
 
-       <div className="mt-8 bg-slate-800/30 rounded-xl p-4 border border-dashed border-slate-700">
+       <div className="mt-8 bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-dashed border-slate-700">
          <h3 className="font-bold text-sm mb-1 flex items-center">
            <Zap size={14} className="text-yellow-500 mr-2" />
            Daily Bonus
@@ -545,41 +561,71 @@ export default function App() {
   );
 
   const renderProfile = () => (
-    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar">
+    <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar z-10">
       <div className="text-center mb-8">
-        <div className="w-24 h-24 bg-slate-700 rounded-full mx-auto mb-4 border-4 border-slate-800 overflow-hidden relative">
+        <div className="w-24 h-24 bg-slate-700 rounded-full mx-auto mb-4 border-4 border-slate-800 overflow-hidden relative shadow-lg">
           <UserIconPlaceholder />
         </div>
         <h2 className="text-2xl font-bold">{user.username}</h2>
         <p className="text-slate-400 text-sm">Member since Nov 2024</p>
       </div>
 
-      <div className="space-y-2 mb-8">
-        <div className="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700">
-          <span className="text-slate-400">Total Games</span>
-          <span className="font-bold">{user.totalGamesPlayed}</span>
-        </div>
-        <div className="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700">
-          <span className="text-slate-400">High Score</span>
-          <span className="font-bold text-blue-400">{user.highScore}</span>
-        </div>
-        <div className="bg-slate-800 p-4 rounded-xl flex justify-between items-center border border-slate-700">
-          <span className="text-slate-400">Current Balance</span>
-          <span className="font-bold flex items-center gap-1">
-             {user.tickets} <Ticket size={14} className="text-blue-500"/>
-          </span>
-        </div>
+      {/* Advanced Stats Grid */}
+      <div className="grid grid-cols-2 gap-3 mb-8">
+          <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center text-center">
+            <span className="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Games</span>
+            <span className="font-bold text-xl text-white">{user.totalGamesPlayed}</span>
+          </div>
+          <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center text-center">
+            <span className="text-[10px] text-slate-400 uppercase font-bold mb-1">High Score</span>
+            <span className="font-bold text-xl text-blue-400">{user.highScore}</span>
+          </div>
+          
+          <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center text-center">
+             <div className="flex items-center justify-center w-full mb-1">
+                 <span className="text-[10px] text-slate-400 uppercase font-bold">Avg Score</span>
+             </div>
+             <span className="font-bold text-xl text-white">
+                {user.totalGamesPlayed > 0 ? Math.round(user.totalScore / user.totalGamesPlayed) : 0}
+             </span>
+          </div>
+          
+           <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center text-center">
+             <div className="flex items-center justify-center w-full mb-1">
+                 <Target size={10} className="text-green-500 mr-1"/>
+                 <span className="text-[10px] text-slate-400 uppercase font-bold">Accuracy</span>
+             </div>
+             <span className="font-bold text-xl text-white">
+                 {user.totalGamesPlayed > 0 ? Math.round((user.totalCorrectAnswers / (user.totalGamesPlayed * 5)) * 100) : 0}%
+             </span>
+          </div>
+
+          <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center text-center">
+             <div className="flex items-center justify-center w-full mb-1">
+                 <Zap size={10} className="text-yellow-500 mr-1"/>
+                 <span className="text-[10px] text-slate-400 uppercase font-bold">Perfect Runs</span>
+             </div>
+             <span className="font-bold text-xl text-white">{user.perfectGames}</span>
+          </div>
+          
+          <div className="bg-slate-800/80 backdrop-blur-md p-4 rounded-xl border border-slate-700 flex flex-col items-center justify-center text-center">
+             <div className="flex items-center justify-center w-full mb-1">
+                 <Ticket size={10} className="text-blue-500 mr-1"/>
+                 <span className="text-[10px] text-slate-400 uppercase font-bold">Balance</span>
+             </div>
+             <span className="font-bold text-xl text-white">{user.tickets}</span>
+          </div>
       </div>
 
       {/* Referral Section */}
       <div className="mb-8">
-        <h3 className="font-bold text-lg mb-4 flex items-center">
+        <h3 className="font-bold text-lg mb-4 flex items-center drop-shadow-md">
           <Gift size={20} className="text-purple-400 mr-2" />
           Invite Friends
         </h3>
         
         {/* Referral Card */}
-        <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-2xl p-5 border border-purple-500/30 mb-4">
+        <div className="bg-gradient-to-r from-purple-900/60 to-blue-900/60 backdrop-blur-md rounded-2xl p-5 border border-purple-500/30 mb-4 shadow-lg">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h4 className="font-bold text-white mb-1">Get Free Tickets!</h4>
@@ -592,7 +638,7 @@ export default function App() {
             </div>
           </div>
           
-          <div className="bg-slate-900/80 rounded-xl p-1 flex items-center justify-between border border-dashed border-purple-400/50">
+          <div className="bg-slate-900/60 rounded-xl p-1 flex items-center justify-between border border-dashed border-purple-400/50">
             <div className="px-4 font-mono font-bold tracking-widest text-lg text-purple-200">
               {user.referralCode}
             </div>
@@ -614,7 +660,7 @@ export default function App() {
         {!showRedeemInput ? (
           <button 
             onClick={() => setShowRedeemInput(true)}
-            className="w-full py-3 text-sm text-purple-300 hover:text-white transition-colors border border-dashed border-slate-700 rounded-xl hover:bg-slate-800"
+            className="w-full py-3 text-sm text-purple-300 hover:text-white transition-colors border border-dashed border-slate-700 rounded-xl hover:bg-slate-800/80 backdrop-blur-sm"
           >
             Have a referral code? Redeem it here
           </button>
@@ -626,7 +672,7 @@ export default function App() {
               maxLength={6}
               value={redeemInputValue}
               onChange={(e) => setRedeemInputValue(e.target.value.toUpperCase())}
-              className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 uppercase font-mono"
+              className="flex-1 bg-slate-800/80 backdrop-blur-sm border border-slate-600 rounded-xl px-4 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 uppercase font-mono"
             />
             <Button size="sm" onClick={handleRedeemCode} disabled={redeemInputValue.length < 3}>
               Redeem
@@ -637,7 +683,7 @@ export default function App() {
 
       {/* Badges Section */}
       <div className="mb-8">
-        <h3 className="font-bold text-lg mb-4 flex items-center">
+        <h3 className="font-bold text-lg mb-4 flex items-center drop-shadow-md">
           <Award size={20} className="text-yellow-500 mr-2" />
           Badges & Achievements
         </h3>
@@ -647,8 +693,8 @@ export default function App() {
             return (
               <div key={badge.id} className={`aspect-square rounded-xl p-3 flex flex-col items-center justify-center text-center border transition-all ${
                 isUnlocked 
-                  ? 'bg-slate-800 border-blue-500/30 shadow-lg shadow-blue-500/10' 
-                  : 'bg-slate-800/50 border-slate-700 opacity-60'
+                  ? 'bg-slate-800/80 backdrop-blur-sm border-blue-500/30 shadow-lg shadow-blue-500/10' 
+                  : 'bg-slate-800/50 backdrop-blur-sm border-slate-700 opacity-60'
               }`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
                   isUnlocked ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-500'
@@ -668,15 +714,15 @@ export default function App() {
       </div>
 
       <div className="mt-4 space-y-2">
-        <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors flex items-center justify-between group">
+        <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group">
           <span className="font-medium text-slate-300 group-hover:text-white">Account Settings</span>
           <span className="text-slate-500">→</span>
         </button>
-        <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors flex items-center justify-between group">
+        <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group">
           <span className="font-medium text-slate-300 group-hover:text-white">Restore Purchases</span>
           <span className="text-slate-500">→</span>
         </button>
-         <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors flex items-center justify-between group">
+         <button className="w-full text-left p-4 rounded-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-colors flex items-center justify-between group">
           <span className="font-medium text-slate-300 group-hover:text-white">Privacy & Legal</span>
           <span className="text-slate-500">→</span>
         </button>
@@ -690,8 +736,11 @@ export default function App() {
 
   return (
     <div className="h-screen w-full bg-slate-900 text-white font-sans max-w-md mx-auto relative shadow-2xl overflow-hidden">
+      {/* Background Snow Effect - Global */}
+      <Snowfall />
+
       {/* Dynamic Screen Rendering */}
-      <div className={`h-full transition-opacity duration-300 ${currentScreen === Screen.QUIZ ? 'bg-slate-900' : 'bg-slate-900'}`}>
+      <div className={`h-full transition-opacity duration-300 relative z-10`}>
         {currentScreen === Screen.HOME && renderHome()}
         {currentScreen === Screen.QUIZ && renderQuiz()}
         {currentScreen === Screen.RESULT && renderResult()}
