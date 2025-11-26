@@ -440,6 +440,7 @@ export default function App() {
       <div className="relative z-10 h-full flex flex-col justify-center">
         {questions.length > 0 && (
           <QuizCard
+            key={quiz.currentQuestionIndex} // Key forces remount for animations
             question={questions[quiz.currentQuestionIndex]}
             timeLeft={timeLeft}
             totalTime={GAME_CONFIG.TIME_PER_QUESTION_SEC}
