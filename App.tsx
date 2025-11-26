@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Ticket, Zap, Trophy, Clock, Share2, Info, Lock, Flag, Calendar, Target, Crown, Award, Gift, Copy, Check, ChevronLeft, Volume2, VolumeX, Bell, Smartphone, LogOut, Save, Mail } from 'lucide-react';
+import { Ticket, Zap, Trophy, Clock, Share2, Info, Lock, Flag, Calendar, Target, Crown, Award, Gift, Copy, Check, ChevronLeft, Volume2, VolumeX, Bell, Smartphone, LogOut, Save, Mail, ShoppingBag } from 'lucide-react';
 import { Screen, UserState, QuizState, Question } from './types';
 import { GAME_CONFIG, PRIZE_TIERS, SHOP_ITEMS, MOCK_LEADERBOARD, BADGES } from './constants';
 import { getRandomQuestions } from './services/questionService';
@@ -595,54 +595,131 @@ export default function App() {
 
   const renderShop = () => (
     <div className="flex flex-col h-full pb-24 pt-8 px-6 overflow-y-auto no-scrollbar z-10">
-       <h2 className="text-2xl font-bold mb-2">Get Tickets</h2>
-       <p className="text-slate-400 text-sm mb-8">Tickets are used to play extra games and climb the leaderboard faster.</p>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-black italic tracking-tight text-white drop-shadow-md">
+            SKI<span className="text-blue-400">SHOP</span>
+          </h2>
+          <p className="text-blue-200 text-xs">Get tickets & keep playing</p>
+        </div>
+        <div className="flex items-center gap-1 bg-slate-800/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700">
+          <Ticket size={14} className="text-blue-400" />
+          <span className="font-bold text-sm">{user.tickets}</span>
+        </div>
+      </div>
+
+      {/* Daily Bonus Section - Redesigned as Hero */}
+      <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 border border-indigo-500/30 p-1 shadow-lg group">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div className="bg-slate-900/40 backdrop-blur-md rounded-xl p-4 relative z-10">
+          <div className="flex justify-between items-center mb-4">
+             <h3 className="font-bold text-sm flex items-center text-indigo-300">
+               <Zap size={16} className="text-yellow-400 mr-2 fill-yellow-400" />
+               Daily Streak
+             </h3>
+             <span className="text-xs font-mono text-slate-400 bg-black/20 px-2 py-0.5 rounded">Day {Math.min(user.streakDays + 1, 7)} of 7</span>
+          </div>
+          
+          {/* Progress Track */}
+          <div className="flex justify-between items-center gap-1 relative">
+            {/* Connecting Line */}
+            <div className="absolute top-1/2 left-2 right-2 h-0.5 bg-slate-700 -z-10"></div>
+            
+            {[1,2,3,4,5,6,7].map(day => {
+               const isCompleted = day <= user.streakDays;
+               const isToday = day === user.streakDays + 1;
+               const isLast = day === 7;
+               
+               let bgClass = "bg-slate-800 border-slate-600 text-slate-500";
+               if (isCompleted) bgClass = "bg-blue-500 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]";
+               if (isToday) bgClass = "bg-yellow-500 border-yellow-300 text-white shadow-[0_0_10px_rgba(234,179,8,0.5)] scale-110";
+               if (isLast && !isCompleted) bgClass = "bg-indigo-900 border-indigo-500 text-indigo-300";
+
+               return (
+                 <div key={day} className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all relative ${bgClass}`}>
+                   {isCompleted ? <Check size={12} strokeWidth={4}/> : day}
+                   {isLast && <Gift size={12} className="absolute -top-4 text-yellow-400 animate-bounce" />}
+                 </div>
+               );
+            })}
+          </div>
+          <p className="text-[10px] text-center mt-3 text-indigo-200/70">
+            Log in 7 days in a row to win +5 Tickets!
+          </p>
+        </div>
+      </div>
+
+       <h3 className="font-bold text-lg mb-4 text-white flex items-center">
+         <ShoppingBag size={18} className="mr-2 text-blue-400" />
+         Ticket Packs
+       </h3>
 
        <div className="space-y-4">
-         {SHOP_ITEMS.map((item) => (
-           <div key={item.id} className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-slate-700 hover:border-blue-500/50 transition-colors relative">
-             {item.label && (
-                <div className="absolute -top-3 right-4 bg-gradient-to-r from-blue-500 to-purple-500 text-[10px] font-bold px-2 py-1 rounded-full shadow-lg uppercase tracking-wider">
-                  {item.label}
-                </div>
-             )}
-             <div className="bg-slate-900/50 rounded-xl p-5 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400">
-                    <Ticket size={24} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-xl text-white">{item.tickets} <span className="text-sm font-normal text-slate-400">Tickets</span></div>
-                    <div className="text-xs text-green-400">Instant delivery</div>
-                  </div>
-                </div>
-                <Button size="sm" onClick={() => {
-                  // Simulate purchase
-                  setUser(prev => ({...prev, tickets: prev.tickets + item.tickets}));
-                  alert(`Purchased ${item.tickets} tickets!`);
-                }}>
-                  {item.price}
-                </Button>
-             </div>
-           </div>
-         ))}
-       </div>
+         {SHOP_ITEMS.map((item, idx) => {
+           // Determine style based on pack type (heuristic based on ticket count)
+           const isBestValue = item.tickets >= 60;
+           const isPopular = item.tickets === 25;
+           
+           let cardStyle = "bg-slate-800/40 border-slate-700/50";
+           let iconBg = "bg-blue-500/20 text-blue-400";
+           let buttonVariant: 'primary' | 'secondary' | 'success' = 'secondary';
+           
+           if (isPopular) {
+             cardStyle = "bg-slate-800/60 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.1)]";
+             iconBg = "bg-purple-500/20 text-purple-400";
+             buttonVariant = 'primary';
+           }
+           if (isBestValue) {
+             cardStyle = "bg-gradient-to-br from-slate-800/80 to-amber-900/20 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)]";
+             iconBg = "bg-amber-500/20 text-amber-400";
+             buttonVariant = 'success'; // Or custom gold
+           }
 
-       <div className="mt-8 bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-dashed border-slate-700">
-         <h3 className="font-bold text-sm mb-1 flex items-center">
-           <Zap size={14} className="text-yellow-500 mr-2" />
-           Daily Bonus
-         </h3>
-         <p className="text-xs text-slate-400 mb-3">Login for 7 days in a row to get 5 free tickets.</p>
-         <div className="flex justify-between gap-1">
-           {[1,2,3,4,5,6,7].map(day => (
-             <div key={day} className={`h-8 flex-1 rounded-md flex items-center justify-center text-xs font-bold ${
-               day <= 3 ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-500'
-             }`}>
-               {day <= 3 ? '✓' : day}
+           return (
+             <div key={item.id} className={`relative group overflow-hidden rounded-2xl p-4 backdrop-blur-md border transition-all hover:scale-[1.02] active:scale-[0.98] ${cardStyle}`}>
+               {/* Label */}
+               {item.label && (
+                   <div className={`absolute top-0 right-0 text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-md uppercase tracking-wider ${isBestValue ? 'bg-amber-500 text-black' : 'bg-purple-600 text-white'}`}>
+                      {item.label}
+                   </div>
+               )}
+               
+               <div className="flex justify-between items-center relative z-10">
+                  <div className="flex items-center gap-4">
+                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${iconBg}`}>
+                        <Ticket size={28} strokeWidth={2.5} />
+                     </div>
+                     <div>
+                        <div className="text-white font-black text-2xl leading-none flex items-baseline gap-1">
+                          {item.tickets} <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Tickets</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-1">Instant Top-up</div>
+                     </div>
+                  </div>
+                  
+                  <Button 
+                    size="sm" 
+                    variant={buttonVariant as any} 
+                    className={isBestValue ? '!bg-amber-500 !text-black !border-amber-700 hover:!bg-amber-400' : ''}
+                    onClick={() => {
+                      setUser(prev => ({...prev, tickets: prev.tickets + item.tickets}));
+                      alert(`Purchased ${item.tickets} tickets!`);
+                    }}
+                  >
+                    {item.price}
+                  </Button>
+               </div>
              </div>
-           ))}
-         </div>
+           );
+         })}
+       </div>
+       
+       <div className="mt-8 text-center px-8">
+          <p className="text-[10px] text-slate-500">
+            Transactions are secure and processed via Stripe. <br/>
+            Tickets do not expire.
+          </p>
        </div>
     </div>
   );
